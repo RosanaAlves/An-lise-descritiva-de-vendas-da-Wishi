@@ -1,0 +1,420 @@
+---
+title: "Análise de vendas"
+author: "ROSNA ALVES"
+header-includes:
+- \usepackage[portuges]{babel}
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+output:
+  html_document: 
+    fig_width: 10
+    fig_height: 6
+    fig_caption: yes
+  pdf_document:
+    latex_engine: xelatex
+---
+
+Os dados para estas análises foram coletados da fonte:
+
+KAGGLE. Sales of summer clothes in E-commerce wishi, 2021.  Disponível em: URL. Acesso em: <https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish > 31 de julho de 2021.
+
+
+O presente arquivo apresenta resultados referentes a produtos relacionados ao verão na Europa. Estes foram disponíveis para venda a partir de julho de 2020, na plataforma de comércio eletrônico Wish.com . 
+
+"Wish oferece uma experiência de compra baseada em descoberta que reflete como os consumidores compram há anos em lojas físicas. Por meio de uma maior interação, nossa tecnologia consegue conhecer nossos usuários e seleciona um feed de produto personalizado para eles. Nossos comerciantes estão continuamente expandindo sua seleção de produtos para fornecer produtos mais diversificados a preços altamente competitivos.
+Peter Szulczewski acredita piamente na tecnologia que melhora a vida das pessoas quando e onde for aplicável. Como ex-engenheiro do Google, Szulczewski passou seis anos e meio desenvolvendo a tecnologia principal que alimenta o Google AdWords e a pesquisa na web.
+Em 2010, ele fundou a Wish para ajudar os consumidores que foram deixados para trás pelas ofertas de comércio eletrônico tradicionais."
+
+WISH. Wish, 2021.  Disponível em: URL. Acesso em: <https://www.wish.com/companyinfo > 30 de julho de 2021.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r bibliotecas,include = FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(formattable)
+```
+
+```{r arquivos, include = FALSE}
+summer <- read_csv("~/Documentos/Portifólio/Projeto 1/CONJUNTOS_DE_DADOS/summer-products-with-rating-and-performance_2020-08.csv")
+attach(summer)
+```
+
+
+
+
+Este estudo foi feito com o intuito de  responder as perguntas a seguir:
+
+### 1. O preço influencia na quantidade de vendas?
+
+
+A hipótese testade é de que a redução dos preços influencia na quantidade de produtos vendidos, ou seja, quanto maior o desconto mais vendas. 
+
+Antes de tudo, foi interessante, classificar os descontos por tipos, para compará-los:
+
+0% equivale a nenhum desconto (ND)
+
+De 1% a 30% desconto baixo    (DB)
+
+De 31% a 50% desconto médio   (DM)
+
+Maior que 50% desconto alto   (DA)
+
+
+```{r, echo=TRUE}
+difpr = c(price - retail_price) # Diferença entre o preço vendido pelo preço de referência.
+difpr = -difpr # Deixando os valores positivos
+porcVal = (difpr/retail_price)*100 # Calculando a porcetagem de desconto em relação ao valor referencia do produto.
+#
+# CLASSIFICANDO OS DESCONTOS:
+# 
+n=length(porcVal)
+clasd = c()
+for( i in 1:n){
+  if(porcVal[i] == 0){ clasd[i] <- "ND"}
+  else if(porcVal[i] > 0 & porcVal[i] < 30){clasd[i] <- "DB"} 
+   else if(porcVal[i] > 30 & porcVal[i] < 50){clasd[i] <- "DM"      }     else{clasd[i] <- "DA"}
+} 
+
+novosummer = data.frame(summer,difpr,porcVal,clasd) # conjunto de dados com todas as variáveis criadas.
+
+nproduct=nrow(distinct(novosummer, product_id)) # verificando se há repetição do ID de produto. 
+
+# Existem linhas duplicadas no conjunto de dados que podem enviesar o resultados. Essas linhas serão retiradas com o comando: #
+
+novosummer =  novosummer%>%
+  distinct(product_id, .keep_all = TRUE)# Retirando linhas duplicadas.
+```
+
+#### Resultados para produtos sem desconto (ND)
+
+```{r, echo=TRUE}
+ND = novosummer %>%
+  filter(clasd == "ND")
+
+# units_sold é o número de unidades vendidas.
+table(ND$units_sold) # Soma quantos produtos tiveram a mesma quantidade de vendas.
+prop.table(table(ND$units_sold)) # proporção representada por cada grupo.
+
+# média de vendas por pruduto 
+median(ND$units_sold)
+```
+
+De 157 produtos que não apresentaram descontos, 2,5% venderam 50000 unidades. E de acordo com o mediana, 50% dos produtos venderam até 1000 unidades.
+
+
+#### Resultados para produtos com desconto baixo (DB)
+
+```{r, echo=TRUE}
+DB = novosummer %>%
+  filter(clasd == "DB")
+D=DB
+table(D$units_sold) 
+prop.table(table(D$units_sold)) 
+median(D$units_sold)
+```
+De acordo com a mediana, 50% do produtos tiveram até 1000 unidades vendidas.
+
+#### Resultados para produtos desconto médio (DM)
+
+```{r, echo=TRUE}
+DM = novosummer %>%
+  filter(clasd == "DM")
+D=DM
+table(D$units_sold) 
+prop.table(table(D$units_sold))
+mean(D$units_sold)
+median(D$units_sold)
+``` 
+De acordo com a mediana 50% dos produtos tiveram até 1000 unidades vendidas.
+
+#### Resultados para produtos com desconto alto (DA)
+
+```{r, echo=TRUE}
+DA = novosummer %>%
+  filter(clasd == "DA")
+D=DA
+table(D$units_sold) 
+prop.table(table(D$units_sold))
+median(D$units_sold)
+``` 
+
+29% dos produtos com desconto alto tiveram 100 unidades vendidas.
+
+De acordo com a mediana, 50% do produtos tiveram até 1000 unidades vendidas.
+
+
+
+#### Comparando
+
+
+Uma forma de comparar os grupos é aplicar o teste de Kruskal-Wallis (teste não-paramétrico), que tem como requisito apenas a independência entre os grupos. Ele vai dizer se os grupos apresentam comportamentos semelhantes.
+
+fixando un nível de significância (que é até quanto é permitido errar) igual a 0,05 (Isso quer dizer que determina-se 95% de confiança na tomada de decisão) temos:
+
+```{r, echo=TRUE}
+
+kruskal.test(novosummer$units_sold,novosummer$clasd)
+```
+
+Como p-valor > 0,05, então podemos dizer que há evidências estatísticas de que os grupos apresentam comportamentos semelhantes em relação a mediana. Isso quer dizer que o tamanho do desconto não teve influência significativa sobre a quantidade de produtos vendidos.
+
+
+### 2. Produtos que mais venderam e suas classificações.
+
+
+Nesse conjunto de dados, o número de classificações, em alguns casos, é maior do que o número de unidades vendidas. Talvez, o site possa ter sumarizando as classificações de vendas anteriores ao mês das que foram estudadas. Por isso, estas análises foram feitas, usando o valor total de classificações, e não o total de unidades vendidas por produto.
+
+Primeiramente, foi calculada a proporção de cada classificação, em relação ao total de classificações por produtos, e essas informações foram representadas nos gráficos a seguir:
+
+```{r, echo=TRUE}
+# Quantidade de produtos por quantidade de vendas
+table(novosummer$units_sold) 
+
+```
+Essa tabela de dados mostra que 3 produtos venderam apenas 1 unidade, 2 produtos venderam apenas 2 unidades, e assim por diante.
+
+Focando naqueles que venderam mais unidades, temos sete grupos de produtos:
+
+#### Produtos que venderam 100 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 100 unidades temos:
+cem_units=novosummer%>%
+  filter(units_sold == 100)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 # Proporção dos classificados com 1 estrela
+  prop2=classifica$rating_two_count/classifica$rating_count*100 # Proporção dos classificados com 2 estrela
+  prop3=classifica$rating_three_count/classifica$rating_count*100 # Proporção dos classificados com 3 estrela
+  prop4=classifica$rating_four_count/classifica$rating_count*100 # Proporção dos classificados com 4 estrela
+  prop5=classifica$rating_five_count/classifica$rating_count*100 # Proporção dos classificados com 5 estrela
+  
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+  
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+A variável prop5 representa a porcentagem de classificações de 5 estrelas (Maior classificação) de cada produto. Essa, foi a que mais se destacou. Isso quer dizer, que os produtos que tiveram 100 unidades vendidas tiveram mais marcações com 5 estrelas do que as demais marcações.
+
+
+#### Produtos que venderam 1000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 10000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 1000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+#### Produtos que venderam 50 000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 50 000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 5000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+```
+
+#### Produtos que venderam 10 000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 10 000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 10000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+#### Produtos que venderam 20 000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 20 000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 20000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+#### Produtos que venderam 50 000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 50 000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 50000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  #data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+#### Produtos que venderam 100 000 unidades
+
+```{r, echo=TRUE}
+# Dos produtos que venderam 100 000 unidades temos:
+
+cem_units=novosummer%>%
+  filter(units_sold == 100000)
+
+classifica=cem_units%>%
+  select(product_id, rating_count,rating_one_count, rating_two_count, rating_three_count, rating_four_count, rating_five_count)
+product_id=classifica$product_id
+
+  prop1=classifica$rating_one_count/classifica$rating_count*100 
+  prop2=classifica$rating_two_count/classifica$rating_count*100 
+  prop3=classifica$rating_three_count/classifica$rating_count*100
+  prop4=classifica$rating_four_count/classifica$rating_count*100
+  prop5=classifica$rating_five_count/classifica$rating_count*100 
+  data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+  #table_pro10000=data.frame(product_id,prop1,prop2,prop3,prop4,prop5)
+#---- Gráfico
+x=rep(1:(length(classifica$product_id)))
+valor = c(prop1,prop5)
+Grupo = c(rep("prop1",length(x)),rep("prop5", length(x)))
+
+dados=data.frame(Produto = rep(x,2),
+                 Proporcao = valor,
+                 Grupo = Grupo)
+ggplot(dados, aes(x=Produto, y = Proporcao, Grupo = Grupo))+geom_line(aes(colour = Grupo, lintype = Grupo))
+
+```
+
+Em todos os casos houve mais marcações com 5 estrelas do que marcações de uma estrela, isso indica que os produtos vendidos pelo e-comerce apresentam qualidade e satisfação do cliente.
+
+Os  produtos que tiveram menos quantidades vendidas não apresentaram informações suficientes para fazer estas analises, isso indica que a maior parte dos compradores não opinou sobre o produto.
+
+### 3. As classificações influenciam na quantidade de vendas?
+
+Como todos os produtos que venderam de 100 a 100 000 unidades apresentaram marcações de 5 estrelas maiores do que os de 1 estrela. Podemos dizer que a qualidade e a satisfação do cliente esta diretamente ligada ao número de vendas. É interessante, pois quando vamos comprar algo pela internet, sempre olhamos a classificação do produto e os comentários. Com certeza isso influencia nossas decisões!
+Seria interessante ter acesso aos dados anteriores e também a mais tipos de produtos, não apenas a estes voltados para o verão, pra ver se esse comportamento se repete.
+
+### Estudos futuros
+
+O próximo passo para estas análises, será construir um modelo de predição de quantidade de vendas, conseguindo identificar quais variáveis as influenciam significativamente. Para isso, será interessante ter mais informações com  relação ao meses anteriores. 
+
