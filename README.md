@@ -1,2 +1,3 @@
 # Análise descritiva de vendas da Wishi
- Base de dados do Kaggle
+
+Analisando base de dados do Kaggle utilizando Rmardown.
